@@ -61,6 +61,8 @@ def read_spam_data(csv_f):
     return message, label
 
 
+#TODO tpesout: make this persistent, so we can use it with the test data.
+# we want to make this use the same features with different data (so we can test)
 def create_train_data(corpus, stop_words, bigram=False, lowercase=True):
     """Extract features from corpus and perform the tf-idf term weighting as well as removing stopwords"""
     # option to have 'this word' as a feature along with 'this' and 'word'
@@ -179,7 +181,8 @@ def main():
                 if val_loss < low_val_loss:
                     low_val_loss = val_loss
             bests.append([l, low_val_loss])
-    except:
+    except Exception as e:
+        print(e)
         pass
     print(bests)
     #TODO save and plot all of our data
