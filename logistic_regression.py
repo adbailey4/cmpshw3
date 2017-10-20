@@ -82,6 +82,37 @@ def integral_of_sigmoid(x):
     return np.log((1+np.exp(x)))
 
 
+def update_weights(inputs, labels, weights):
+    """Newton-Raphson iterative reweighted least squares"""
+
+
+
+def logistic_hessian(inputs, weights):
+    """Calculate hessian matrix for logistic regression"""
+    y_hat = logistic_evaluation(inputs, weights)
+    b = np.array([1-y for y in y_hat])
+    # p(1-p)
+
+    prob = [y_hat*b]
+    n = len(prob[0])
+    assert n == len(y_hat)
+    d = np.repeat(prob, [n,], axis=0)
+    I = np.identity(n)
+    R = np.multiply(I, prob)
+    # hessian = np.matmul(np.matmul(inputs.T, R), inputs)
+    return R
+
+
+def logistic_evaluation(inputs, weights):
+    """Returns predicted outputs from the inputs and weights"""
+    prediction = []
+    for index, feature in enumerate(inputs):
+        a = np.matmul(weights, feature.toarray().T)[0]
+        y_hat = sigmoid(a)
+        prediction.append(y_hat)
+    return prediction
+
+
 def logistic_loss(features, labels, weights):
     """Calculates total loss of lists of features and labels given weights"""
     total_loss = 0
@@ -116,13 +147,18 @@ def main():
     assert X.shape[0] == len(text_labels)
 
     # expit is sigmoid function
+    # eta is step eta_0 * t**(-alpha)  # t is the iteration number while eta and alphas are constant
+    alpha = 0.9
+    eta_0 = 0.1
+    # l is the lambda (regularize hyperparameter)
+    l = 0.1
 
     n_features = X.shape[1]
     weights = np.random.normal(0, 0.2, n_features)
     loss = square_loss(X, int_labels, weights=weights)
     loss_l = logistic_loss(X, int_labels, weights=weights)
-
-    print(loss, loss_l)
+    R = logistic_hessian(X, weights)
+    print(R)
 
 
 
