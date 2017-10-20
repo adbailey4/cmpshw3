@@ -150,7 +150,6 @@ def main():
     assert X.shape[0] == len(int_labels)
     assert X.shape[0] == len(text_labels)
     n_features = X.shape[1]
-    weights = np.random.normal(0, 0.2, n_features)
 
     ##### HYPER PARAMETERS  ######
     # eta is step eta_0 * t**(-alpha)  # t is the iteration number while eta and alphas are constant
@@ -168,19 +167,17 @@ def main():
     val_labels = int_labels[2000:]
 
     bests = []
-    try:
-        for l in list_of_lambdas:
-            low_val_loss = 100
-            for t in range(300):
-                weights = logistic_regression(train, train_labels, weights, l, alpha, eta_0, t)
-                val_loss = square_loss(val, val_labels, weights=weights)
-                train_loss = square_loss(train, train_labels, weights=weights)
-                print(val_loss, train_loss)
-                if val_loss < low_val_loss:
-                    low_val_loss = val_loss
-            bests.append([l, low_val_loss])
-    except:
-        pass
+    for l in list_of_lambdas:
+        weights = np.random.normal(0, 0.2, n_features)
+        low_val_loss = 100
+        for t in range(300):
+            weights = logistic_regression(train, train_labels, weights, l, alpha, eta_0, t)
+            val_loss = square_loss(val, val_labels, weights=weights)
+            train_loss = square_loss(train, train_labels, weights=weights)
+            print(val_loss, train_loss)
+            if val_loss < low_val_loss:
+                low_val_loss = val_loss
+        bests.append([l, low_val_loss])
     print(bests)
     #TODO save and plot all of our data
 
