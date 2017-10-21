@@ -159,7 +159,6 @@ def main():
     assert X.shape[0] == len(int_labels)
     assert X.shape[0] == len(text_labels)
     n_features = X.shape[1]
-    weights = np.random.normal(0, 0.2, n_features)
 
     ##### HYPER PARAMETERS  ######
     # eta is step eta_0 * t**(-alpha)  # t is the iteration number while eta and alphas are constant
@@ -191,7 +190,6 @@ def main():
     except Exception as e:
         print(e)
         pass
-    print(bests)
     #TODO save and plot all of our data
 
 
