@@ -21,7 +21,14 @@ from scipy.special import expit
 
 def sigmoid(x, alpha=1, beta=0):
     """Sigmoid function"""
-    return math.exp(alpha*(x+beta)) / (1 + math.exp(alpha*(x+beta)))
+
+    # this can overflow a double, so we use different implementations
+    # return math.exp(alpha*(x+beta)) / (1 + math.exp(alpha*(x+beta)))
+    if x < 0:
+        return 1 - 1 / (1 + math.exp(alpha*(x+beta)))
+    else:
+        return 1 / (1 + math.exp(-alpha*(x+beta)))
+
 
 
 def integral_of_sigmoid(x):
