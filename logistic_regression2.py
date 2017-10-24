@@ -63,7 +63,7 @@ def create_train_data(corpus, stop_words, bigram=False, lowercase=True):
     # create feature vector
     X = vectorizer.fit_transform(corpus)
     transformer = TfidfTransformer(smooth_idf=False, norm='l2')
-    # normalize and perform tf-idf
+    # normalize and perform tf-idff
     tfidf = transformer.fit_transform(X)
     return tfidf.toarray()
 
@@ -113,26 +113,39 @@ def logistic_evaluation(inputs, weights):
     return np.array(prediction)
 
 
-def logistic_regression(inputs, labels, weights, l, alpha, eta_0, step, bias=False):
+def logistic_regression(inputs, labels, weights, l, alpha, eta_0, step, bias=False, regularization='L2'):
     """Implement regularized logistic regression with moving learning weight"""
     eta = eta_0 * (step ** alpha)
     y_hat = logistic_evaluation(inputs, weights)
-    if bias:
-        regularize = weights*(eta * l)
-        regularize[0] = 0
-    else:
-        regularize = weights*(eta * l)
+    if regularization == 'L2':
+        if bias:
+            regularize = weights*(eta * l)
+            regularize[0] = 0
+        else:
+            regularize = weights*(eta * l)
+
+    elif regularization == 'L1':
+        if bias:
+            regularize = np.sign(weights)*(eta * l)
+            regularize[0] = 0
+        else:
+            regularize = np.sign(weights)*(eta * l)
+
     new_weights = weights - regularize - (eta * np.matmul(np.array(y_hat-labels), inputs))
     return new_weights
 
 
-
-def iterative_reweighted_least_squares(inputs, labels, weights, lamda):
+def iterative_reweighted_least_squares(inputs, labels, weights, lamda, bias=False):
     """Newton-Raphson iterative reweighted least squares"""
     R, y_hat = logistic_hessian(inputs, weights)
     hessian = np.matmul(np.matmul(inputs.T, R), inputs)
     inv_hessian = np.linalg.pinv(hessian)
-    new_weights = weights - np.matmul(inv_hessian, np.matmul(inputs.T, (y_hat - labels)) - (weights*lamda))
+    if bias:
+        regularize = weights*lamda
+        regularize[0] = 0
+    else:
+        regularize = weights*lamda
+    new_weights = weights - np.matmul(inv_hessian, np.matmul(inputs.T, (y_hat - labels)) - regularize)
     return new_weights
 
 
@@ -261,9 +274,9 @@ for ds in all_training_datasets:
 
 
 def run_regression(lamda, train, train_labels, validate, validate_labels,
-                   eta_0=0.1, alpha=0.9, iterations=321, verbose=False, iwlsr=False, bias=True):
+                   eta_0=0.1, alpha=0.9, iterations=321, verbose=False, iwlsr=False, bias=True, regularization='L2'):
     # init
-    report_frequency = int(iterations / 10.0)
+    report_frequency = int(iterations / 4)
     t = None
     # run regression
     try:
@@ -273,9 +286,10 @@ def run_regression(lamda, train, train_labels, validate, validate_labels,
         min_weights_val_loss = []
         for t in range(iterations):
             if iwlsr:
-                weights = iterative_reweighted_least_squares(train, train_labels, weights, lamda)
+                weights = iterative_reweighted_least_squares(train, train_labels, weights, lamda, bias=bias)
             else:
-                weights = logistic_regression(train, train_labels, weights, lamda, alpha, eta_0, t, bias=bias)
+                weights = logistic_regression(train, train_labels, weights, lamda, alpha, eta_0, t, bias=bias,
+                                              regularization=regularization)
             train_loss = square_loss(train, train_labels, weights=weights)
             val_loss = square_loss(validate, validate_labels, weights=weights)
             if verbose and (t % report_frequency) == 0:
@@ -299,19 +313,21 @@ def run_regression(lamda, train, train_labels, validate, validate_labels,
 dataset = all_training_datasets[0]
 
 
-# #
-# start = timer()
-# v_error, t_error, best_weights = run_regression(0.000000, dataset[TRAIN_DATA], dataset[TRAIN_LABELS],
-#                                                     dataset[VALIDATE_DATA], dataset[VALIDATE_LABELS], iwlsr=True, iterations=3, verbose=True)
-# print(v_error, t_error, best_weights)
-# stop = timer()
-# print("Linear Regression Running Time = {} seconds".format(stop - start), file=sys.stderr)
 #
+start = timer()
+v_error, t_error, best_weights = run_regression(0.000001, dataset[TRAIN_DATA], dataset[TRAIN_LABELS],
+                                                dataset[VALIDATE_DATA], dataset[VALIDATE_LABELS], iwlsr=True,
+                                                iterations=4, verbose=True, bias=True)
+print(v_error, t_error, best_weights)
+stop = timer()
+print("Linear Regression Running Time = {} seconds".format(stop - start), file=sys.stderr)
+
+
 
 start = timer()
 v_error, t_error, best_weights = run_regression(0.000001, dataset[TRAIN_DATA], dataset[TRAIN_LABELS],
-                                                dataset[VALIDATE_DATA], dataset[VALIDATE_LABELS], iwlsr=False, iterations=200, verbose=True,
-                                                bias=True)
+                                                dataset[VALIDATE_DATA], dataset[VALIDATE_LABELS], iwlsr=False,
+                                                iterations=300, verbose=True, bias=True, regularization='L1')
 print(v_error, t_error, best_weights)
 stop = timer()
 print("Iterative Running Time = {} seconds".format(stop - start), file=sys.stderr)
